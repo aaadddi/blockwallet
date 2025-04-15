@@ -1,6 +1,6 @@
 "use client"
 import { useState, useRef, useEffect } from "react";
-import { NewWallet, createEtheriumWallet, createSolanaWallet, getNewMnemonic } from "../wallets/utils";
+import { NewWallet, createEtheriumWallet, createSolanaWallet } from "../wallets/utils";
 import MnemonicBox from "@/Components/MnemonicBox";
 import CreateWalletBox from "@/Components/CreateWalletsBox";
 import YourWallet from "@/Components/YourWallet";
