@@ -1,111 +1,102 @@
 "use client"
-import { useState } from "react";
-import {createEtheriumWallet, createSolanaWallet, getNewMnemonic} from "../wallets/utils"
-import { NewWallet } from "../wallets/utils";
+import { useState, useRef, useEffect } from "react";
+import { NewWallet, createEtheriumWallet, createSolanaWallet, getNewMnemonic } from "../wallets/utils";
+import MnemonicBox from "@/Components/MnemonicBox";
+import CreateWalletBox from "@/Components/CreateWalletsBox";
+import YourWallet from "@/Components/YourWallet";
+
+type WalletState = {
+  currentIndex: number;
+  addresses: NewWallet[];
+  mnemonic: string;
+}
+
+const initialState: WalletState = {
+  currentIndex: 0,
+  addresses: [],
+  mnemonic: ""
+};
 
 export default function Home() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [addresses, setAddresses] = useState<NewWallet[]>([]);
-  const [mnemonic, setMnemonic] = useState<string>("")
-  const [showMnemonic, setShowMnemonic] = useState(false);
-  const [newWalletType, setNewWalletType] = useState<'Solana'| 'Etherium'>('Solana')
+  const [walletState, setWalletState] = useState<WalletState>(initialState);
+  const [networkType, setNetworkType] = useState("testnet");
+  const isRestoring = useRef(false);
 
-  const handleNewWallet = async () =>{
-    let seedMnemonic = mnemonic;    
-    
-    if (!seedMnemonic) {
-      seedMnemonic = getNewMnemonic();
-      setMnemonic(seedMnemonic);
-    }
+  // Cleanup function
+  useEffect(() => {
+    return () => {
+      // Reset state when component unmounts
+      setWalletState(initialState);
+    };
+  }, []);
 
-    if(newWalletType == 'Etherium'){
-      const wallet = await createEtheriumWallet({seedMnemonic, currentIndex})
-      setCurrentIndex(currentIndex + 1)
-      setAddresses([...addresses, wallet])
-    }
+  const handleRestore = async (restoreMnemonic: string) => {
+    if (isRestoring.current) return; // Prevent multiple restores
+    isRestoring.current = true;
 
-    if(newWalletType == 'Solana'){
-      const wallet = await createSolanaWallet({seedMnemonic, currentIndex})
-      setCurrentIndex(currentIndex + 1)
-      setAddresses([...addresses, wallet])
+    try {
+      // First, completely reset the state
+      setWalletState(initialState);
+
+      // Wait for state to reset
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Create new wallets with the restored mnemonic
+      const newWallets: NewWallet[] = [];
+      
+      // Create 2 Ethereum wallets
+      let i = 0;
+      while(i<2) {
+        const ethWallet = await createEtheriumWallet({ 
+          seedMnemonic: restoreMnemonic, 
+          currentIndex: i 
+        });
+        i++;
+        newWallets.push(ethWallet);
+      }
+      
+      // Create 2 Solana wallets
+      while(i<5){
+        const solWallet = await createSolanaWallet({ 
+          seedMnemonic: restoreMnemonic, 
+          currentIndex: i 
+        });
+        i++;
+        newWallets.push(solWallet);
+      }
+      
+      // Update state with new wallets
+      setWalletState({
+        currentIndex: 2,
+        addresses: newWallets,
+        mnemonic: restoreMnemonic
+      });
+    } catch (error) {
+      console.error("Error restoring wallets:", error);
+      setWalletState(initialState);
+    } finally {
+      isRestoring.current = false;
     }
-  }
-  
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">Blockchain Wallet Manager</h1>
-          
-          <div className="flex space-x-4 mb-6">
-            <button 
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
-              onClick={() => {
-                setNewWalletType("Etherium")
-                handleNewWallet()
-              }}
-            >
-              Create Ethereum Wallet
-            </button>
-            <button 
-              className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
-              onClick={() => {
-                setNewWalletType("Solana")
-                handleNewWallet()
-              }}
-            >
-              Create Solana Wallet
-            </button>
+          <div className="w-full flex justify-end my-2">
+            <span className="px-4 py text-gray-500 border rounded-2xl">{networkType}</span>
           </div>
-
-          <div className="mb-6">
-            <button 
-              className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-md transition-colors"
-              onClick={() => setShowMnemonic(!showMnemonic)}
-            >
-              {showMnemonic ? "Hide" : "Show"} Seed Phrase
-            </button>
-            
-            {showMnemonic && mnemonic && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-md">
-                <h2 className="text-sm font-medium text-gray-700 mb-2">Your Seed Phrase</h2>
-                <p className="font-mono text-sm bg-gray-100 p-3 rounded">{mnemonic}</p>
-                <p className="text-xs text-gray-500 mt-2">Keep this phrase safe and never share it with anyone!</p>
-              </div>
-            )}
-          </div>
-
-          <div className="mt-8">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Your Wallets</h2>
-            {addresses.length > 0 ? (
-              <div className="space-y-4">
-                {addresses.map((wallet, idx) => (
-                  <div 
-                    key={idx} 
-                    className="p-4 bg-gray-50 rounded-md border border-gray-200"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {wallet.walletType}
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        Index: {wallet.currentIndex.toString()}
-                      </div>
-                    </div>
-                    <div className="mt-2">
-                      <p className="text-sm font-mono break-all">{wallet.publicKey}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                No wallets created yet. Create your first wallet above!
-              </div>
-            )}
-          </div>
+          <CreateWalletBox 
+            mnemonic={walletState.mnemonic} 
+            setMnemonic={(mnemonic) => setWalletState(prev => ({...prev, mnemonic}))} 
+            currentIndex={walletState.currentIndex}
+            setCurrentIndex={(index) => setWalletState(prev => ({...prev, currentIndex: index}))}
+            addresses={walletState.addresses}
+            setAddresses={(addresses) => setWalletState(prev => ({...prev, addresses}))}
+          />
+          <MnemonicBox mnemonic={walletState.mnemonic} onRestore={handleRestore}/>
+          <YourWallet addresses={walletState.addresses}/>
         </div>
       </div>
     </div>

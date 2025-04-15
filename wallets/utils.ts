@@ -17,7 +17,6 @@ type CreateParams = {
     seedMnemonic: string,
     currentIndex: Number
 }
-// sauce tongue auto stem daring denial inch grid helmet poem bulk quick
 export const createEtheriumWallet = async ({seedMnemonic, currentIndex}:CreateParams) =>{
     const seed = await mnemonicToSeed(seedMnemonic)
     const derivationPath = `m/44/60/${currentIndex}/0`
@@ -27,7 +26,7 @@ export const createEtheriumWallet = async ({seedMnemonic, currentIndex}:CreatePa
     const wallet = new Wallet(privateKey);
     const publicKey = wallet.address;
     return {
-        walletType: "Etherium",
+        walletType: "ethereum",
         currentIndex,
         publicKey,
         privateKey
@@ -38,12 +37,11 @@ export const createSolanaWallet = async ({seedMnemonic, currentIndex}:CreatePara
     const derivationPath = `m/44'/501'/${currentIndex}'/0'`;
     
     const derived = ed25519.derivePath(derivationPath,  seed.toString('hex')).key;
-    console.log(derived)
     const keypair = Keypair.fromSeed(derived);
     const publicKey = keypair.publicKey.toBase58();
     const privateKey = keypair.secretKey;
     return {
-        walletType: "Solana",
+        walletType: "solana",
         currentIndex,
         publicKey,
         privateKey
