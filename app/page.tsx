@@ -19,7 +19,6 @@ const initialState: WalletState = {
 
 export default function Home() {
   const [walletState, setWalletState] = useState<WalletState>(initialState);
-  const [networkType, setNetworkType] = useState("testnet");
   const isRestoring = useRef(false);
 
   // Cleanup function
@@ -84,9 +83,6 @@ export default function Home() {
       <div className="max-w-3xl mx-auto">
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">Blockchain Wallet Manager</h1>
-          <div className="w-full flex justify-end my-2">
-            <span className="px-4 py text-gray-500 border rounded-2xl">{networkType}</span>
-          </div>
           <CreateWalletBox 
             mnemonic={walletState.mnemonic} 
             setMnemonic={(mnemonic) => setWalletState(prev => ({...prev, mnemonic}))} 
